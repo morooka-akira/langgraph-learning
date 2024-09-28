@@ -1,0 +1,121 @@
+[tool.poetry]
+name = "langgraph-learning"
+version = "0.1.0"
+description = ""
+authors = ["Heiya <morooka.akira.inon29@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dependencies]
+python = "3.12.4"
+ruff = "^0.6.0"
+pydantic = "^2.7.3"
+langgraph = "^0.2.28"
+langsmith = "^0.1.129"
+langchain-openai = "^0.2.1"
+langchainhub = "^0.1.20"
+langchain = "^0.3.1"
+
+[tool.poetry.group.dev.dependencies]
+watchdog = "^5.0.0"
+pytest = "^8.2.2"
+pytest-mock = "^3.14.0"
+freezegun = "^1.5.1"
+pytest-cov = "^5.0.0"
+pytest-asyncio = "^0.24.0"
+
+# ========================= ruff ========================= #
+[tool.ruff]
+# 1行の最大文字数
+line-length = 120
+# 自動生成されたファイルを除外
+exclude = [".git", "src/app/rpc/"]
+
+[tool.ruff.lint]
+# チェックするエラーの種類
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "UP",  # pyupgrade
+]
+# 除外するエラーの種類
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+    "W191",  # indentation contains tabs
+    "B904", # raise ... from ... になっていない場合のエラーを無視
+]
+
+# ファイルごとのエラー除外
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+# isort の設定
+[tool.ruff.lint.isort]
+known-third-party = ["fastapi", "pydantic", "starlette"]
+
+[tool.ruff.lint.pyupgrade]
+# Python3.8互換のための設定
+keep-runtime-typing = true
+
+[tool.ruff.format]
+quote-style = "single"
+
+# ========================= mypy ========================= #
+# see: https://mypy.readthedocs.io/en/stable/config_file.html
+# NOTE: 若干厳しめに設定使いながら調整していく
+[tool.mypy]
+python_version = "3.12"
+exclude = ["^src/app/rpc/"]
+# 型注釈がない関数やメソッドの定義を禁止
+disallow_untyped_defs = true
+check_untyped_defs = true
+pretty = true
+show_column_numbers = true
+allow_untyped_globals = false
+disallow_untyped_calls = true
+implicit_reexport = false
+strict_equality = true
+strict_optional = true
+warn_unreachable = true
+# injectorからInterfaceを解決するために、型抽象渡すとmypyがエラーになってしまう問題
+# 抽象型でインスタンスを指定できないと、DIのメリットがなくなってしまうためこのエラーは無視する
+# ref: https://github.com/python-injector/injector/issues/143
+disable_error_code = ["type-abstract"]
+
+# mypy --install-types で stubがインストールできないモジュールのimportエラーを除外する
+[[tool.mypy.overrides]]
+module = [
+]
+ignore_missing_imports = true
+
+# excludeでは、importされた対象まで除外できないため、overridesで直接除外する
+# NOTE: もっと良い方法がありそう？わかったらアップデートしていく
+[[tool.mypy.overrides]]
+module = [
+]
+follow_imports = "skip"
+ignore_missing_imports = true
+
+# testモジュール配下は、プロジェクトと同等の型チェックは行いたいが、構文のチェックはあまり厳しくしない
+[[tool.mypy.overrides]]
+module = [
+    "test.*"
+]
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+
+# loggerの構造化ログ出力設定対応で不可視変数を書き換えるため
+[[tool.mypy.overrides]]
+module = [
+]
+disable_error_code = "attr-defined"
