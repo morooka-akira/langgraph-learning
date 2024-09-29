@@ -33,7 +33,7 @@ pytest-asyncio = "^0.24.0"
 # 1行の最大文字数
 line-length = 120
 # 自動生成されたファイルを除外
-exclude = [".git", "src/app/rpc/"]
+exclude = [".git"]
 
 [tool.ruff.lint]
 # チェックするエラーの種類
