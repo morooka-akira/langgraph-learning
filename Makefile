@@ -2,14 +2,14 @@ all: lint type-check test
 
 # lint + format(fix)
 lint:
-	poetry run ruff format .
-	poetry run ruff check --fix .
+	uv run ruff format .
+	uv run ruff check --fix .
 # lint + format(not fix)
 lint-check:
-	poetry run ruff format --check .
-	poetry run ruff check .
+	uv run ruff format --check .
+	uv run ruff check .
 type-check:
-	poetry run mypy --install-types --non-interactive src
-	poetry run mypy src
+	uv run mypy --install-types --non-interactive src
+	uv run mypy src
 test:
-	poetry run pytest -s
+	uv run pytest -s
