@@ -4,15 +4,6 @@ from typing_extensions import TypedDict
 
 class GraphState(TypedDict):
     question: str
-    hoge: str
-
-
-class PrivateState(TypedDict):
-    piyo: str
-
-
-class OverallState(TypedDict):
-    fuga: str
 
 
 def node1(state: GraphState):
@@ -21,13 +12,13 @@ def node1(state: GraphState):
     return {'question': '1'}
 
 
-def node2(state: GraphState) -> PrivateState:
+def node2(state: GraphState):
     print('node2')
     print(state)
-    return {'question': '2', 'fuga': 'fuga'}
+    return {'question': '2'}
 
 
-def node3(state: OverallState):
+def node3(state: GraphState):
     print('node3')
     print(state)
     return {'question': 'bye'}
@@ -44,4 +35,4 @@ def invoke_graph():
     builder.add_edge('node3', END)
     graph = builder.compile()
 
-    graph.invoke({})
+    graph.invoke({'question': 'hello'})
