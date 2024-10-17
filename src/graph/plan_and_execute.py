@@ -131,7 +131,9 @@ async def execute_step(state: PlanExecute):
     plan = state['plan']
     plan_str = '\n'.join(f'{i+1}. {step}' for i, step in enumerate(plan))
     task = plan[0]
-    task_formatted = f"""次の計画に基づいて: {plan_str}\n\nあなたのタスクはステップ {1} の実行です: {task}."""
+    task_formatted = (
+        f"""次の計画に基づいて行動してください。: {plan_str}\n\nあなたのタスクはステップ {1} の実行です: {task}."""
+    )
     agent_response = await agent_executor.ainvoke({'messages': [('user', task_formatted)]})
     return {
         'past_steps': [(task, agent_response['messages'][-1].content)],
@@ -193,7 +195,7 @@ async def main():
     # print(mermaid)
 
     config = {'recursion_limit': 50}
-    inputs = {'input': 'Youtuberになるための方法を教えて'}
+    inputs = {'input': '2024年のオリンピックの開催地はどこですか？'}
     async for event in app.astream(inputs, config=config):
         for k, v in event.items():
             if k != '__end__':
