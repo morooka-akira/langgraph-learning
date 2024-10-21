@@ -14,9 +14,14 @@ class Conversation(BaseModel):
     """
 
     category: str = Field(..., description='会話の分類')
+    purpose: str = Field(..., description='会話の目的')
+    discourse_analysis: str = Field(..., description='会話の分析')
     text: str = Field(..., description='会話の内容')
     keywords: list[str] = Field(..., description='会話のキーワード')
     created_at: datetime = Field(default_factory=datetime.now, description='会話の作成日時')
+    emotion_fluctuation: int = Field(
+        ..., description='感情の浮き沈み。0が最も落ち込んでおり、100が最も安定している。(0~100)'
+    )
 
 
 class ConversationClassification(BaseModel):
@@ -85,33 +90,94 @@ prompt = ChatPromptTemplate.from_messages(
 chain = prompt | ChatOpenAI(model='gpt-4o', temperature=0).with_structured_output(ConversationClassification)
 
 
+class ReplyConversation(BaseModel):
+    """
+    返信の構成
+    """
+
+    text: str = Field(..., description='返信メッセージ')
+    purpose: str = Field(..., description='返信の目的')
+    keywords: list[str] = Field(..., description='返信メッセージに含めるべきキーワード')
+    emotion: str = Field(..., description='返信メッセージに含める話者の感情')
+
+
 reply_prompt = ChatPromptTemplate.from_messages(
     [
         (
             'system',
-            '与えられた会話のの流れを踏まえて最後の会話の返信を行ってください。ただし、カテゴリを分類して、関連する内容を過去話しているようなら、その会話の文脈を踏まえて返信を行ってください。 {messages}',
+            """
+            与えられた会話の流れを踏まえて最後の会話の返信を行います。
+            与えられた構成で返信メッセージの要素を作成してください。
+
+            あなたの人格は以下のとおりです
+            人格: {personality}
+
+            {messages}
+            """,
         ),
     ]
 )
 
-reply_chain = reply_prompt | ChatOpenAI(model='gpt-4o', temperature=0)
+reply_chain = reply_prompt | ChatOpenAI(model='gpt-4o', temperature=0).with_structured_output(ReplyConversation)
+
+
+class Memory(BaseModel):
+    """
+    過去の記憶
+    """
+
+    memory_needs: bool = Field(..., description='過去の記憶を参照する必要があるか')
+    keywords: list[str] = Field(..., description='過去の記憶に含めるべきキーワード')
+    reason: str = Field(..., description='過去の記憶を参照する理由')
+
+
+memory_prompt = ChatPromptTemplate.from_messages(
+    [
+        (
+            'system',
+            """
+            与えられた会話の流れを踏まえて最後の会話の返信を行います。
+            この時、過去の記憶を参照したほうが良いかを判断してください。
+            過去の記憶を参照する場合は、その理由を述べてください。
+            {messages}
+            """,
+        ),
+    ]
+)
+memory_chain = memory_prompt | ChatOpenAI(model='gpt-4o', temperature=0).with_structured_output(Memory)
 
 
 if __name__ == '__main__':
     conversation = chain.invoke(
         {
             'messages': [
-                ('human', 'こんにちは、最近どうですか？'),
-                ('ai', '元気ですが、ちょっと仕事のことで悩んでいます。'),
-                ('human', '何か相談に乗れることがあれば教えてください。'),
-                ('ai', 'ありがとう！実は、プロジェクトの進め方についてアドバイスが欲しいんです。'),
-                ('human', 'もちろん、今週末に時間を取って一緒に考えましょう。'),
-                ('human', '最近、新しい趣味を始めたんだ。'),
-                ('ai', 'それは素晴らしいですね！どんな趣味ですか？'),
-                ('human', '写真撮影を始めました。自然の風景を撮るのが好きです。'),
-                ('human', 'ところでさっきの相談なんだけど覚えている？'),
+                ('human', '今日はいい天気だね'),
+                ('ai', 'そうだね、どうしたの？'),
+                (
+                    'human',
+                    'いや。それだけ。',
+                ),
+                # (
+                #     'ai',
+                #     'それは辛いね…。そういう風に感じると、プレッシャーもすごいよね。あなたが一生懸命やってるのはみんなも分かってると思うよ。でも、どうしてそんなに自分に厳しいのかな？',
+                # ),
+                # ('human', 'たぶん、期待に応えなきゃって思いが強いからかな。自分のせいでチームが苦しむのが嫌なんだ。'),
+                # (
+                #     'ai',
+                #     'その気持ちは大事だと思うけど、あまり一人で抱え込みすぎない方がいいよ。チームって、支え合うためにあるものだし、困っていることを話すのもリーダーシップのひとつだと思うんだ。何か手伝えることがあったら、いつでも言ってね。',
+                # ),
+                # (
+                #     'human',
+                #     'ありがとう…。そうだね、ちょっと話しただけで少し気が楽になったかも。みんなに頼るのも大事だよね。',
+                # ),
+                # ('ai', 'うん、それがチームのいいところだよ。いつでも話を聞くから、遠慮しないでね。'),
             ]
         }
     )
-    reply = reply_chain.invoke({'messages': conversation.model_dump_json()})
-    print(reply)
+    print(conversation)
+    memory = memory_chain.invoke(
+        {
+            'messages': conversation.model_dump_json(),
+        }
+    )
+    print(memory)
